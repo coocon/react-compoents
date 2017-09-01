@@ -1,7 +1,10 @@
 import React from 'react';
-import {getSuggest} from 'utils/request';
+import {getSuggestV2 as getSuggest} from 'utils/request';
 import {render} from 'react-dom';
-import Item from './Item';
+import SymbolItem from './SymbolItem';
+import UserItem from './UserItem';
+import TweetItem from './TweetItem';
+import NoItem from './NoItem';
 
 import './index.scss';
 
@@ -16,26 +19,22 @@ class Suggest extends React.Component {
         show: false,
         isCommandDown: false,
         lastQuery: null,
-        selectedSymbol: ''
-    }
-    getFullSymbolUrl = (symbol) => {
-        //http:
-        var protocol = location.protocol;
-        var host = location.host;
-        var url = protocol + '//' + host + '/hq/s/' + symbol;
-        return url;
+        //内容的tabIndex  股票 用户 帖子
+        tabIndex: 0,
+        selectedIndex: '',
+        gotoUrl: '#'
     }
     /**
      * 去搜索落地页面
+     * user symbol post
      */
-    gotoSearch = (symbol) => {
-        const {isCommandDown, selectedSymbol} = this.state;
-        symbol = symbol || selectedSymbol;
-        if (!symbol) {
+    gotoSearch = (url) => {
+        const {isCommandDown, gotoUrl} = this.state;
+        url = url || gotoUrl;
+        if (!url) {
             return;
         }
-        const href = this.getFullSymbolUrl(symbol);
-        window.open(href);
+        window.open(url);
         if (isCommandDown) {
             this.refs.eleInput.focus();
         }
@@ -84,7 +83,7 @@ class Suggest extends React.Component {
         this.setState({value: value})
         //关键词为空
         if (value.length === 0) {
-            this.setState({data: [], show: false, selectedSymbol: ''});
+            this.setState({data: [], show: false, selectedIndex: 0});
             return;
         }
         if (this.timerQuery) {
@@ -101,17 +100,33 @@ class Suggest extends React.Component {
             clearTimeout(this.timerHide);
             this.timerHide = null;
         }
-        if (data.length > 0) {
+        if (this.checkDataNotEmpty(data)) {
             this.setState({show: true});
         }
+    }
+    checkDataNotEmpty = (data) => {
+        let res = false;
+        if (!data) {
+            return res;
+        }
+        ['stocks', 'tweets', 'users'].forEach(item => {
+            if (data[item] && data[item].items && data[item].items.length > 0) {
+                res = true;
+            }
+        })
+        return res;
+
     }
 
     onBlur = (e) =>{
         this.hideResult();
     }
-    setActiveSymbol = (symbol) => {
-        this.setState({selectedSymbol: symbol})
+    //设置index 和取得位置
+    //selectedIndex, gotoUrl
+    setActiveItem = (obj) => {
+        this.setState(obj)
     }
+
     //获取数据
     getData = (word) => {
         this.setState({loading: true, lastQuery: word});
@@ -120,13 +135,13 @@ class Suggest extends React.Component {
                 word: word
             }
         }).then(resp => {
-            const data = resp.data && resp.data.items || [];
+            const data = resp.data || {};
             const {lastQuery} = this.state;
             if (lastQuery == word) {
                 this.setState({
                     data:  data,
-                    selectedSymbol: data[0] && data[0].symbol,
-                    show: !!data.length,
+                    selectedIndex: 0,
+                    show: this.checkDataNotEmpty(data),
                     loading: false
                 });
             }
@@ -135,55 +150,84 @@ class Suggest extends React.Component {
             if (lastQuery == word) {
                 this.setState({
                     show: false,
-                    selectedSymbol: '',
+                    selectedIndex: 0,
                     loading: false
                 });
             }
         })
     }
     moveSelection = (direction) => {
-        const {data, selectedSymbol} = this.state;
-        let seletedIndex = 0;
-        let len = data.length;
+        let {selectedIndex, tabIndex} = this.state;
+        const dataList = this.getTabIndexData(tabIndex);
+        let len = dataList.length;
         if (len === 0) {
             return;
         }
-        data.forEach((item, index) => {
-            if (item.symbol == selectedSymbol) {
-                seletedIndex = index;
-            }
-        })
         if (direction === 'up') {
-            seletedIndex -= 1;
-            if (seletedIndex < 0) {
-                seletedIndex = len - 1;
+            selectedIndex -= 1;
+            if (selectedIndex < 0) {
+                selectedIndex = len - 1;
             }
         }
         if (direction === 'down') {
-            seletedIndex += 1;
-            if (seletedIndex >= len) {
-                seletedIndex = 0;
+            selectedIndex += 1;
+            if (selectedIndex >= len) {
+                selectedIndex = 0;
             }
         }
-        this.setActiveSymbol(data[seletedIndex].symbol);
+        this.setActiveItem({
+            selectedIndex: selectedIndex,
+            gotoUrl: dataList[selectedIndex].gotoUrl
+        });
+    }
+
+    getTabIndexData = (tabIndex) => {
+        const {data} = this.state;
+        const type = ['stocks', 'users', 'tweets'][tabIndex];
+        return data[type] && data[type].items || data;
+    }
+    //需要跟之前一一对应
+    getComponentItem = (tabIndex) => {
+       return [SymbolItem, UserItem, TweetItem][tabIndex];
     }
 
     renderResult = () => {
-        const {data, selectedSymbol} = this.state;
+        const {selectedIndex, tabIndex} = this.state;
+        const dataList = this.getTabIndexData(tabIndex)
+        const type = ['股票', '用户', '帖子'][tabIndex];
 
+        if (dataList.length == 0) {
+            return <NoItem errorMsg={"未找到相关" + type} onClick={() => { this.refs.eleInput.focus() }} />;
+        }
+        const Item = this.getComponentItem(tabIndex);
         return(
-            data.map(item => {
-                return (<Item key={item.symbol} {...item} selectedSymbol={selectedSymbol} setActiveSymbol={this.setActiveSymbol} gotoSearch={this.gotoSearch}/>)
-            })
+            <ul className="result-content">
+                { dataList.map((item, index) => {
+                    const isActive = selectedIndex == index;
+                    return <Item key={'symbol' + index} data={item} index={index}
+                                isActive={isActive}
+                                setActiveItem={this.setActiveItem}
+                                gotoSearch={this.gotoSearch}
+                            />
+                  })
+                }
+            </ul>
         )
     }
     handleSubmit(event) {
         event.preventDefault();
     }
+    setTabIndex = (index) => {
+        this.refs.eleInput.focus();
+        this.setState({tabIndex: index})
+    }
+    getClsName = (tabIndex, index) => {
+        return tabIndex == index ? 'tab-item active' : 'tab-item';
+    }
     render() {
         const placeholder = '输入股票名称、代码、拼音';
 
-        const {show, value} = this.state;
+        const {show, value, tabIndex} = this.state;
         const style = show ? {'display': 'block'} : {'display': 'none'}
 
         return (
@@ -191,9 +235,14 @@ class Suggest extends React.Component {
                 <form className="frm-search" action="#" method="get" onSubmit={this.handleSubmit}>
                     <i className="iconfont icon-sousuo"></i>
                     <input ref="eleInput" className="quick-search" value={value} onBlur={this.onBlur} onFocus={this.onFocus} onKeyDown={this.onKeyDown} onChange={this.onChange} placeholder={placeholder} autoComplete="off" type="text" />
-                    <ul className="search-result" style={style}>
+                    <div className="search-result" style={style}>
+                        <div className="result-head">
+                            <p className={this.getClsName(tabIndex, 0)} onClick={(e) => {this.setTabIndex(0)}}>股票</p>
+                            <p className={this.getClsName(tabIndex, 1)} onClick={(e) => {this.setTabIndex(1)}}>用户</p>
+                            <p className={this.getClsName(tabIndex, 2)} onClick={(e) => {this.setTabIndex(2)}}>帖子</p>
+                        </div>
                         {this.renderResult()}
-                    </ul>
+                    </div>
                 </form>
             </div>
         )

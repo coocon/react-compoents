@@ -1,4 +1,7 @@
 @import 'styles/modules/variable';
+
+//border background
+$gray: #f2f5f6;
 .search-wrap {
     position: relative;
     float: left;
@@ -37,52 +40,117 @@
             box-sizing: border-box;
             position: absolute;
             top: 50px;
-            width: 280px;
+            width: 368px;
             border-radius: 1px;
             z-index: 10;
             background: #fff;
             border: 1px solid #ddd;
             box-shadow: 1px 1px 1px rgba(0,0,0,.3);
-
-            li {
-                height: 40px;
-                line-height: 40px;
-            }
-            .group {
-                height: 30px;
-                line-height: 30px;
-                background: #f2f5f6;
-                padding-left: 24px;
-            }
-            .symbol {
+        }
+        //结果top
+        .result-head {
+            font-size: 14px;
+            height: 42px;
+            line-height: 42px;
+            border-bottom: 1px solid $gray;
+            display: flex;
+            .tab-item {
+                flex: 1;
+                text-align: center;
                 cursor: pointer;
+                color: #999;
             }
             .active {
-                background: #f2f5f6;
+                color: #333;
             }
-            a {
-                padding-left: 10px;
-                height: 40px;
-                line-height: 40px;
-                word-break: break-all;
-                white-space: nowrap;
-                min-width: 78px;
-                display: block;
-                color: #000;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                border-left: 1px solid #fff;
-                border-right: 1px solid #fff;
-                border-bottom: 1px dashed #f2f5f6;
-                strong {
-                    color: #05a;
-                }
-                span {
-                    color: #999;
-                    padding-left: 10px;
-                }
+        }
+        .result-content {
+            max-height: 600px;
+            overflow: scroll;
+            .active {
+                background-color: $gray;
             }
         }
     }
-
+    //三个item放到一起
+    .symbol {
+        cursor: pointer;
+        a {
+            padding-left: 20px;
+            height: 40px;
+            line-height: 40px;
+            word-break: break-all;
+            white-space: nowrap;
+            min-width: 78px;
+            display: block;
+            color: #000;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            border-left: 1px solid #fff;
+            border-right: 1px solid #fff;
+            border-bottom: 1px dashed $gray;
+            strong {
+                color: #05a;
+            }
+            span {
+                color: #999;
+                padding-left: 10px;
+            }
+        }
+        .icon {
+            width: 17px;
+            height: 12px;
+            display: inline-block;
+            margin-right: 8px;
+            border-radius: 1px;
+        }
+        .icon-us {
+            background: url('~images/community/icon-us.png') center center no-repeat;
+            background-size: 100% 100%;
+        }
+        .icon-hk {
+            background: url('~images/community/icon-hk.png') center center no-repeat;
+            background-size: 100% 100%;
+        }
+        .icon-sh {
+            background: url('~images/community/icon-sh.png') center center no-repeat;
+            background-size: 100% 100%;
+        }
+        .icon-sz {
+            background: url('~images/community/icon-sz.png') center center no-repeat;
+            background-size: 100% 100%;
+        }
+    }
+    //搜搜用户
+    .user {
+        cursor: pointer;
+        height: 40px;
+        line-height: 40px;
+        .thumbnail {
+            float: left;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            margin: 5px 8px 0 10px;
+        }
+        a {
+            color: #333;
+        }
+    }
+    //搜索帖子样式
+    .tweet {
+        padding: 8px 20px;
+        cursor: pointer;
+        .title {
+            font-size: 16px;
+            height: 24px;
+            line-height: 24px;
+            color: #333;
+        }
+        .content {
+            font-size: 14px;
+            height: 24px;
+            color: #999;
+        }
+    }
 }
